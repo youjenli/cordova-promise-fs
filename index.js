@@ -322,16 +322,34 @@ module.exports = function(options){
             writer.onwriteend = resolve;
             writer.onerror = reject;
             if(typeof blob === 'string') {
-              blob = new Blob([blob],{type: mimeType || 'text/plain'});
+              blob = createBlob([blob], mimeType || 'text/plain');
             } else if(blob instanceof Blob !== true){
-              blob = new Blob([JSON.stringify(blob,null,4)],{type: mimeType || 'application/json'});
+              blob = createBlob([JSON.stringify(blob,null,4)], mimeType || 'application/json');
             }
             writer.write(blob);
           },reject);
         });
       });
-    }
+  }
 
+  function createBlob(parts, type) {
+    try {
+      return new Blob(parts, {type: type});
+    } catch(e) {
+      var BlobBuilder = window.BlobBuilder ||
+        window.WebKitBlobBuilder ||
+        window.MozBlobBuilder ||
+        window.MSBlobBuilder;
+      if(BlobBuilder) {
+        var bb = new BlobBuilder();
+        bb.append(parts);
+        return bb.getBlob(type);
+      } else {
+        throw new Error("Unable to create blob");
+      }
+    }
+  }
+	
   /* move a file */
   function move(src,dest) {
     return ensure(dirname(dest))
